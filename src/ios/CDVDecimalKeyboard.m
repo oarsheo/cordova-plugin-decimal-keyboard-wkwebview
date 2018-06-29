@@ -75,7 +75,7 @@ BOOL isAppInBackground=NO;
 
     decimalButton.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
     [decimalButton setTitleEdgeInsets:UIEdgeInsetsMake(-20.0f, 0.0f, 0.0f, 0.0f)];
-    [decimalButton setBackgroundColor: [UIColor colorWithRed:210/255.0 green:213/255.0 blue:218/255.0 alpha:1.0]];
+    [decimalButton setBackgroundColor: [self getDecimalButtonBackgroundColor]];
 
     // locate keyboard view
     UIWindow* tempWindow = nil;
@@ -154,15 +154,15 @@ BOOL isDifferentKeyboardShown=NO;
 }
 
 - (void)buttonPressed:(UIButton *)button {
-    [decimalButton setBackgroundColor: [UIColor colorWithRed:210/255.0 green:213/255.0 blue:218/255.0 alpha:1.0]];
+    [decimalButton setBackgroundColor: [self getDecimalButtonBackgroundColor]];
     [self evaluateJavaScript:@"DecimalKeyboard.addDecimal();" completionHandler:nil];
 }
 
 - (void)buttonTapped:(UIButton *)button {
-    [decimalButton setBackgroundColor: [UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:1.0]];
+    [decimalButton setBackgroundColor: [self getDecimalButtonBackgroundColor]];
 }
 - (void)buttonPressCancel:(UIButton *)button{
-    [decimalButton setBackgroundColor: [UIColor colorWithRed:210/255.0 green:213/255.0 blue:218/255.0 alpha:1.0]];
+    [decimalButton setBackgroundColor: [self getDecimalButtonBackgroundColor]];
 }
 
 - (void) isTextOrNumberAndDecimal:(void (^)(BOOL isTextOrNumberAndDecimal))completionHandler {
@@ -205,12 +205,19 @@ BOOL stopSearching=NO;
             CGFloat x = 0;
             CGFloat y =ui.frame.size.height;
             for(UIView *nView in ui.subviews){
-
                 if([[nView description] hasPrefix:@"<UIKBKeyView"] == YES){
                     //all keys of same size;
-                    height = nView.frame.size.height;
-                    width = nView.frame.size.width-1.5;
-                    y = y-(height-1);
+                    if ([self isIphoneX]) {//detect iphone X
+                        UIEdgeInsets margin = nView.layoutMargins;
+                        height = nView.frame.size.height - margin.top;
+                        width = nView.frame.size.width-1.5 - margin.left;
+                        x = x + margin.left;
+                        y = y - height - margin.top - margin.bottom - 4;
+                    } else {
+                        height = nView.frame.size.height;
+                        width = nView.frame.size.width-1.5;
+                        y = y-(height-1);
+                    }
                     cgButton = CGRectMake(x, y, width, height);
                     break;
 
@@ -221,6 +228,14 @@ BOOL stopSearching=NO;
 
         [self listSubviewsOfView:subview];
     }
+}
+
+- (UIColor *)getDecimalButtonBackgroundColor {
+    return [self isIphoneX] ? [UIColor clearColor] : [UIColor colorWithRed:210/255.0 green:213/255.0 blue:218/255.0 alpha:1.0];
+}
+- (BOOL)isIphoneX {
+    CGSize screenSize = [[UIScreen mainScreen] bounds].size;
+    return (screenSize.height == 812);
 }
 
 - (void) evaluateJavaScript:(NSString *)script
