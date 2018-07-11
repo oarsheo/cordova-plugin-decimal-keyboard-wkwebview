@@ -74,7 +74,7 @@ BOOL isAppInBackground=NO;
 
 
     decimalButton.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
-    [decimalButton setTitleEdgeInsets:UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0f)];
+    [decimalButton setTitleEdgeInsets:UIEdgeInsetsMake(-20.0f, 0.0f, 0.0f, 0.0f)];
     [decimalButton setBackgroundColor: [self getDecimalButtonBackgroundColor]];
 
     // locate keyboard view
