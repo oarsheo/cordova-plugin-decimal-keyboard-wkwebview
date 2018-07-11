@@ -212,7 +212,7 @@ BOOL stopSearching=NO;
                         height = nView.frame.size.height - margin.top;
                         width = nView.frame.size.width-1.5 - margin.left;
                         x = x + margin.left;
-                        y = y - height - margin.top - margin.bottom - 8;
+                        y = y - height - margin.top - margin.bottom - 16;
                     } else {
                         height = nView.frame.size.height;
                         width = nView.frame.size.width-1.5;
