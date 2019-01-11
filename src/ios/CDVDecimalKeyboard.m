@@ -170,12 +170,13 @@ BOOL isDifferentKeyboardShown=NO;
            completionHandler:^(NSString * _Nullable response, NSError * _Nullable error) {
                BOOL isText = [response isEqual:@"text"];
                BOOL isNumber = [response isEqual:@"number"];
-
+               BOOL isTel = [response isEqual:@"tel"];
+               
                if (isText || isNumber) {
                    [self evaluateJavaScript:@"DecimalKeyboard.isDecimal();"
                           completionHandler:^(NSString * _Nullable response, NSError * _Nullable error) {
                               BOOL isDecimal = [response isEqual:@"true"] || [response isEqual:@"1"];
-                              BOOL isTextOrNumberAndDecimal = (isText || isNumber) && isDecimal;
+                              BOOL isTextOrNumberAndDecimal = (isText || isNumber || isTel) && isDecimal;
                               completionHandler(isTextOrNumberAndDecimal);
                           }];
                } else {
