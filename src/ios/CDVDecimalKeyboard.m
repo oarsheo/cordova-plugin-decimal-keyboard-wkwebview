@@ -172,7 +172,7 @@ BOOL isDifferentKeyboardShown=NO;
                BOOL isNumber = [response isEqual:@"number"];
                BOOL isTel = [response isEqual:@"tel"];
                
-               if (isText || isNumber) {
+               if (isText || isNumber || isTel) {
                    [self evaluateJavaScript:@"DecimalKeyboard.isDecimal();"
                           completionHandler:^(NSString * _Nullable response, NSError * _Nullable error) {
                               BOOL isDecimal = [response isEqual:@"true"] || [response isEqual:@"1"];
