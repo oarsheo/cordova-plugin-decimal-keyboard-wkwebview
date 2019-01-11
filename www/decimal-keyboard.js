@@ -65,6 +65,9 @@ DecimalKeyboard.addDecimal = function(){
 			if(caretPosStart==0){
 				first='0';
 			}
+			if(activeElement.inputmask && !last) {
+			   last = ' ';
+			}
 			valueToSet = first+decimalChar+last;
 
 		}
