@@ -4,11 +4,12 @@
 
 @implementation CDVDecimalKeyboard
 
-UIView* ui;
-CGRect cgButton;
-BOOL isDecimalKeyRequired=YES;
+UIView* keyPlane; // view to which we will add button
+CGRect decimalButtonRect;
+UIColor* decimalButtonBGColor;
 UIButton *decimalButton;
 BOOL isAppInBackground=NO;
+
 - (void)pluginInitialize {
     [[NSNotificationCenter defaultCenter] addObserver: self
                                              selector: @selector(keyboardWillAppear:)
@@ -26,9 +27,9 @@ BOOL isAppInBackground=NO;
                                              selector:@selector(appDidBecomeActive:)
                                                  name:UIApplicationDidBecomeActiveNotification
                                                object:nil];
-
-
+    decimalButtonBGColor = [UIColor clearColor];
 }
+
 - (void) appWillResignActive: (NSNotification*) n{
     isAppInBackground = YES;
     [self removeDecimalButton];
@@ -38,16 +39,15 @@ BOOL isAppInBackground=NO;
     if(isAppInBackground==YES){
         isAppInBackground = NO;
         [self processKeyboardShownEvent];
-
+        
     }
 }
 
-
-- (void) keyboardWillDisappear: (NSNotification*) n{
+- (void) keyboardWillDisappear: (NSNotification*) n {
     [self removeDecimalButton];
 }
 
--(void) setDecimalChar {
+- (void) setDecimalChar {
     [self evaluateJavaScript:@"DecimalKeyboard.getDecimalChar();"
            completionHandler:^(NSString * _Nullable response, NSError * _Nullable error) {
                if (response) {
@@ -56,14 +56,15 @@ BOOL isAppInBackground=NO;
            }];
 }
 
-- (void) addDecimalButton{
+- (void) addDecimalButton {
     if ( UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad )
     {
         return ; /* Device is iPad and this code works only in iPhone*/
     }
     decimalButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self setDecimalChar];
-    [decimalButton setTitleColor:[UIColor colorWithRed:0/255.0 green:0/255.0 blue:0/255.0 alpha:1.0] forState:UIControlStateNormal];
+    [decimalButton setTitleColor:[UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:1.0] forState:UIControlStateNormal];
+    // [decimalButton setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
     decimalButton.titleLabel.font = [UIFont systemFontOfSize:40.0];
     [decimalButton addTarget:self action:@selector(buttonPressed:)
             forControlEvents:UIControlEventTouchUpInside];
@@ -71,22 +72,24 @@ BOOL isAppInBackground=NO;
             forControlEvents:UIControlEventTouchDown];
     [decimalButton addTarget:self action:@selector(buttonPressCancel:)
             forControlEvents:UIControlEventTouchUpOutside];
-
-
+    
     decimalButton.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
     [decimalButton setTitleEdgeInsets:UIEdgeInsetsMake(-20.0f, 0.0f, 0.0f, 0.0f)];
-    [decimalButton setBackgroundColor: [self getDecimalButtonBackgroundColor]];
-
+    [decimalButton setBackgroundColor:decimalButtonBGColor];
+    
+    decimalButton.layer.cornerRadius = 10;
+    decimalButton.clipsToBounds = YES;
+    
     // locate keyboard view
     UIWindow* tempWindow = nil;
     NSArray* openWindows = [[UIApplication sharedApplication] windows];
-
+    
     for(UIWindow* object in openWindows){
         if([[object description] hasPrefix:@"<UIRemoteKeyboardWindow"] == YES){
             tempWindow = object;
         }
     }
-
+    
     if(tempWindow ==nil){
         //for ios 8
         for(UIWindow* object in openWindows){
@@ -95,48 +98,38 @@ BOOL isAppInBackground=NO;
             }
         }
     }
-
-
+    
     UIView* keyboard;
     for(int i=0; i<[tempWindow.subviews count]; i++) {
         keyboard = [tempWindow.subviews objectAtIndex:i];
-        [self listSubviewsOfView: keyboard];
-        decimalButton.frame = cgButton;
-        [ui addSubview:decimalButton];
+        decimalButtonRect = CGRectMake(0.0, 0.0, 0.0, 0.0);
+        [self calculateDecimalButtonRect:keyboard];
+        NSLog(@"Positioning decimalButton at %@", NSStringFromCGRect(decimalButtonRect));
+        decimalButton.frame = decimalButtonRect;
+        [keyPlane addSubview:decimalButton];
     }
 }
+
 - (void) removeDecimalButton{
     [decimalButton removeFromSuperview];
     decimalButton=nil;
-    stopSearching=NO;
-
 }
-- (void) deleteDecimalButton{
-    [decimalButton removeFromSuperview];
-    decimalButton=nil;
-    stopSearching=NO;
-}
-BOOL isDifferentKeyboardShown=NO;
 
 - (void) keyboardWillAppear: (NSNotification*) n{
     NSDictionary* info = [n userInfo];
     NSNumber* value = [info objectForKey:UIKeyboardAnimationDurationUserInfoKey];
     double dValue = [value doubleValue];
-
-    if(dValue <= 0.0){
-        [self removeDecimalButton];
-        return;
+    
+    if (0.0 <= dValue) {
+        dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC * dValue);
+        dispatch_after(delay, dispatch_get_main_queue(), ^(void){
+            [self processKeyboardShownEvent];
+        });
     }
-
-    dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC * dValue);
-    dispatch_after(delay, dispatch_get_main_queue(), ^(void){
-        [self processKeyboardShownEvent];
-    });
-
-
 }
+
 - (void) processKeyboardShownEvent{
-    [self isTextOrNumberAndDecimal:^(BOOL isDecimalKeyRequired) {
+    [self isTextAndDecimal:^(BOOL isDecimalKeyRequired) {
         // create custom button
         if(decimalButton == nil){
             if(isDecimalKeyRequired){
@@ -154,29 +147,28 @@ BOOL isDifferentKeyboardShown=NO;
 }
 
 - (void)buttonPressed:(UIButton *)button {
-    [decimalButton setBackgroundColor: [self getDecimalButtonBackgroundColor]];
+    [decimalButton setBackgroundColor: decimalButtonBGColor];
     [self evaluateJavaScript:@"DecimalKeyboard.addDecimal();" completionHandler:nil];
 }
 
 - (void)buttonTapped:(UIButton *)button {
-    [decimalButton setBackgroundColor: [self getDecimalButtonBackgroundColor]];
+    // [decimalButton setBackgroundColor:UIColor.whiteColor];
 }
 - (void)buttonPressCancel:(UIButton *)button{
-    [decimalButton setBackgroundColor: [self getDecimalButtonBackgroundColor]];
+    [decimalButton setBackgroundColor:decimalButtonBGColor];
 }
 
-- (void) isTextOrNumberAndDecimal:(void (^)(BOOL isTextOrNumberAndDecimal))completionHandler {
+- (void) isTextAndDecimal:(void (^)(BOOL isTextAndDecimal))completionHandler {
     [self evaluateJavaScript:@"DecimalKeyboard.getActiveElementType();"
            completionHandler:^(NSString * _Nullable response, NSError * _Nullable error) {
                BOOL isText = [response isEqual:@"text"];
-               BOOL isNumber = [response isEqual:@"number"];
                
-               if (isText || isNumber) {
+               if (isText) {
                    [self evaluateJavaScript:@"DecimalKeyboard.isDecimal();"
                           completionHandler:^(NSString * _Nullable response, NSError * _Nullable error) {
                               BOOL isDecimal = [response isEqual:@"true"] || [response isEqual:@"1"];
-                              BOOL isTextOrNumberAndDecimal = (isText || isNumber) && isDecimal;
-                              completionHandler(isTextOrNumberAndDecimal);
+                              BOOL isTextAndDecimal = isText && isDecimal;
+                              completionHandler(isTextAndDecimal);
                           }];
                } else {
                    completionHandler(NO);
@@ -184,69 +176,36 @@ BOOL isDifferentKeyboardShown=NO;
            }];
 }
 
-BOOL stopSearching=NO;
-- (void)listSubviewsOfView:(UIView *)view {
-
-    // Get the subviews of the view
-    NSArray *subviews = [view subviews];
-
-    // Return if there are no subviews
-    if ([subviews count] == 0) return; // COUNT CHECK LINE
-
-    for (UIView *subview in subviews) {
-        if(stopSearching==YES){
-            break;
-        }
-        if([[subview description] hasPrefix:@"<UIKBKeyplaneView"] == YES){
-            ui = subview;
-            stopSearching = YES;
-            CGFloat height= 0.0;
-            CGFloat width=0.0;
-            CGFloat x = 0;
-            CGFloat y =ui.frame.size.height;
-            for(UIView *nView in ui.subviews){
-                if([[nView description] hasPrefix:@"<UIKBKeyView"] == YES){
-                    //all keys of same size;
-                    if ([self isIphoneX]) {//detect iphone X
-                        UIEdgeInsets margin = nView.layoutMargins;
-                        height = nView.frame.size.height - margin.top;
-                        width = nView.frame.size.width-1.5 - margin.left;
-                        x = x + margin.left;
-                        y = y - height - margin.top - margin.bottom - 4;
+- (void)calculateDecimalButtonRect:(UIView *)view {
+    for (UIView *subview in [view subviews]) {
+        if([[subview description] hasPrefix:@"<UIKBKeyplaneView"] == YES) {
+            keyPlane = subview;
+            for(UIView *v in subview.subviews) {
+                if([[v description] hasPrefix:@"<UIKBKeyView"] == YES) {
+                    if (decimalButtonRect.size.width == 0) {
+                        decimalButtonRect = v.frame;  // Initialize by copying button frame
                     } else {
-                        height = nView.frame.size.height;
-                        width = nView.frame.size.width-1.5;
-                        y = y-(height-1);
+                        decimalButtonRect.origin.x = MIN(decimalButtonRect.origin.x, v.frame.origin.x);
+                        decimalButtonRect.origin.y = MAX(decimalButtonRect.origin.y, v.frame.origin.y);
+                        decimalButtonRect.size.height = MAX(decimalButtonRect.size.height, v.frame.size.height);
+                        decimalButtonRect.size.width = MAX(decimalButtonRect.size.width, v.frame.size.width);
                     }
-                    cgButton = CGRectMake(x, y, width, height);
-                    break;
-
                 }
-
             }
         }
-
-        [self listSubviewsOfView:subview];
+        [self calculateDecimalButtonRect:subview];
     }
-}
-
-- (UIColor *)getDecimalButtonBackgroundColor {
-    return [self isIphoneX] ? [UIColor clearColor] : [UIColor colorWithRed:210/255.0 green:213/255.0 blue:218/255.0 alpha:1.0];
-}
-- (BOOL)isIphoneX {
-    CGSize screenSize = [[UIScreen mainScreen] bounds].size;
-    return (screenSize.height == 812);
 }
 
 - (void) evaluateJavaScript:(NSString *)script
           completionHandler:(void (^ _Nullable)(NSString * _Nullable response, NSError * _Nullable error))completionHandler {
-
+    
     if ([self.webView isKindOfClass:UIWebView.class]) {
         UIWebView *webview = (UIWebView*)self.webView;
         NSString *response = [webview stringByEvaluatingJavaScriptFromString:script];
         if (completionHandler) completionHandler(response, nil);
     }
-
+    
     else if ([self.webView isKindOfClass:WKWebView.class]) {
         WKWebView *webview = (WKWebView*)self.webView;
         [webview evaluateJavaScript:script completionHandler:^(id result, NSError *error) {
@@ -256,7 +215,7 @@ BOOL stopSearching=NO;
             }
         }];
     }
-
+    
 }
 
 @end
