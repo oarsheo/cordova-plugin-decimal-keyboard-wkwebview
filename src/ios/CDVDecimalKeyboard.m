@@ -63,8 +63,14 @@ BOOL isAppInBackground=NO;
     }
     decimalButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self setDecimalChar];
-    [decimalButton setTitleColor:[UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:1.0] forState:UIControlStateNormal];
-    // [decimalButton setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
+    
+    NSDictionary *settings = self.commandDelegate.settings;
+    
+    if ([settings cordovaBoolSettingForKey:@"KeyboardAppearanceDark" defaultValue:NO]) {
+        [decimalButton setTitleColor:[UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:1.0] forState:UIControlStateNormal];
+    } else {
+        [decimalButton setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
+    }
     decimalButton.titleLabel.font = [UIFont systemFontOfSize:40.0];
     [decimalButton addTarget:self action:@selector(buttonPressed:)
             forControlEvents:UIControlEventTouchUpInside];
