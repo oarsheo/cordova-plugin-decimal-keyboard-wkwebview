@@ -1,6 +1,8 @@
 #import <WebKit/WebKit.h>
 
 #import "CDVDecimalKeyboard.h"
+#import <Cordova/CDVAvailability.h>
+#import <Cordova/NSDictionary+CordovaPreferences.h>
 
 @implementation CDVDecimalKeyboard
 
